@@ -1,16 +1,20 @@
 title: Import Documents
-description: This add on allows you to submit a public Dropbox or Google Drive link and automatically upload the files contained within to DocumentCloud. This Add-On now supports uploads of [all 70 filetypes](https://www.documentcloud.org/help/api/#supported-file-types) supported by DocumentCloud. 
+description: This add on allows you to submit a public Dropbox or Google Drive link and automatically upload the files contained within to DocumentCloud. This Add-On now supports uploads of [all 70 filetypes](https://www.documentcloud.org/help/api/#supported-file-types) supported by DocumentCloud.
 properties:
- url:
-  title: URL
-  type: string
- project_id:
-  title: Type the ID of the project you would like to upload the files to. 
-  type: integer
- access_level:
-  title: Access level (public, private, or organization) of the documents you would like to upload. 
-  type: string
-  default: public
+  url:
+    title: URL
+    type: string
+  project_id:
+    title: Type the ID of the project you would like to upload the files to.
+    type: integer
+  access_level:
+    title: Access level of the documents you would like to upload.
+    type: string
+    default: public
+    enum:
+      - public
+      - organization
+      - private
 required:
- - url
- - project_id
+  - url
+  - project_id
