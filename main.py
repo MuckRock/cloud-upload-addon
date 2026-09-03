@@ -20,18 +20,18 @@ class Import(AddOn):
             try:
                 project = self.client.projects.get(project_id)
                 kwargs["project"] = project.id
-                print(f"Resolved project {project_id} -> id {project.id}")
+                #print(f"Resolved project {project_id} -> id {project.id}")
             except (DoesNotExistError, APIError) as e:
-                print(f"Failed to resolve project_id={project_id!r}: {e}")
+                #print(f"Failed to resolve project_id={project_id!r}: {e}")
                 self.set_message("Invalid project ID specified. Try again")
                 sys.exit(0)
         else:
-            print("No project_id supplied; uploading without a project")
+            #print("No project_id supplied; uploading without a project")
 
         os.makedirs("./out/", exist_ok=True)
-        print(f"Calling grab(url={url!r})")
+        #print(f"Calling grab(url={url!r})")
         result = grab(url, "./out/")
-        print(f"grab returned: {result!r}")
+        #print(f"grab returned: {result!r}")
 
         # clouddl sometimes writes filenames with stray whitespace, which makes
         # upload_directory derive an invalid original_extension (e.g. "pdf ")
@@ -44,11 +44,11 @@ class Import(AddOn):
                 if clean_name != name:
                     clean_path = os.path.join(root, clean_name)
                     os.rename(path, clean_path)
-                    print(f"normalized {name!r} -> {clean_name!r}")
+                    #print(f"normalized {name!r} -> {clean_name!r}")
                     path = clean_path
                 size = os.path.getsize(path)
                 grabbed.append(path)
-                print(f"grabbed file: {path} ({size} bytes)")
+                #print(f"grabbed file: {path} ({size} bytes)")
 
         print(f"Total files after grab: {len(grabbed)}")
         if not grabbed:
