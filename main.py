@@ -13,8 +13,6 @@ class Import(AddOn):
     Google Drive & Dropbox"""
 
     def main(self):
-        me = self.client.users.get("me")
-        print("client identity:", me.id, me.username)
 
         url = self.data["url"]
         project_id = self.data.get("project_id")
