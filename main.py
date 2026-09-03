@@ -13,7 +13,6 @@ class Import(AddOn):
     Google Drive & Dropbox"""
 
     def main(self):
-
         url = self.data["url"]
         project_id = self.data.get("project_id")
         kwargs = {}
@@ -34,10 +33,19 @@ class Import(AddOn):
         result = grab(url, "./out/")
         print(f"grab returned: {result!r}")
 
+        # clouddl sometimes writes filenames with stray whitespace, which makes
+        # upload_directory derive an invalid original_extension (e.g. "pdf ")
+        # and silently drop the file. Normalize names on disk before uploading.
         grabbed = []
         for root, _dirs, files in os.walk("./out/"):
             for name in files:
                 path = os.path.join(root, name)
+                clean_name = name.strip()
+                if clean_name != name:
+                    clean_path = os.path.join(root, clean_name)
+                    os.rename(path, clean_path)
+                    print(f"normalized {name!r} -> {clean_name!r}")
+                    path = clean_path
                 size = os.path.getsize(path)
                 grabbed.append(path)
                 print(f"grabbed file: {path} ({size} bytes)")
@@ -48,40 +56,23 @@ class Import(AddOn):
             self.set_message("Couldn't download anything from that link.")
             sys.exit(0)
 
-        access = self.data.get("access_level")
-        successes = 0
-        errors = 0
-        for path in grabbed:
-            name = os.path.basename(path)
-            _title, ext = os.path.splitext(name)
-            ext = ext.lstrip(".").lower()
-            if not ext:
-                print(f"Skipping {path}: no file extension, can't determine type")
-                errors += 1
-                continue
+        print(f"Uploading {len(grabbed)} file(s) with kwargs={kwargs!r}")
+        try:
+            self.client.documents.upload_directory(
+                "./out/",
+                extensions=None,
+                access=self.data.get("access_level"),
+                **kwargs,
+            )
+        except APIError as e:
+            print(f"upload_directory raised APIError: {e}")
+            self.set_message("Upload failed — see logs.")
+            sys.exit(1)
 
-            self.set_message(f"Uploading {name}...")
-            print(f"Uploading {path} (original_extension={ext!r}, kwargs={kwargs!r})")
-            try:
-                doc = self.client.documents.upload(
-                    path,
-                    original_extension=ext,
-                    access=access,
-                    **kwargs,
-                )
-            except APIError as e:
-                print(f"upload failed for {path}: {e}")
-                errors += 1
-                continue
-
-            print(f"uploaded {path} -> pk {doc.id}")
-            successes += 1
-
-        sfiles = "file" if successes == 1 else "files"
-        efiles = "file" if errors == 1 else "files"
-        print(f"Done: {successes} uploaded, {errors} skipped/failed")
-        self.set_message(f"Uploaded {successes} {sfiles}, skipped {errors} {efiles}")
+        print("upload_directory completed")
+        self.set_message(f"Uploaded {len(grabbed)} file(s).")
 
 
 if __name__ == "__main__":
     Import().main()
+
