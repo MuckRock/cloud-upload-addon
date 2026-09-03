@@ -1,6 +1,7 @@
-python-documentcloud==4.0.1
+python-documentcloud==4.8.1
 requests
 tqdm
 patool
 bs4
 clouddl
+python-squarelet==0.6.0
