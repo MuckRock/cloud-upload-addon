@@ -13,13 +13,11 @@ class Import(AddOn):
     Google Drive & Dropbox"""
 
     def main(self):
-
         me = self.client.users.get("me")
         print("client identity:", me.id, me.username)
-        
+
         url = self.data["url"]
         project_id = self.data.get("project_id")
-
         kwargs = {}
         if project_id:
             try:
@@ -34,7 +32,6 @@ class Import(AddOn):
             print("No project_id supplied; uploading without a project")
 
         os.makedirs("./out/", exist_ok=True)
-
         print(f"Calling grab(url={url!r})")
         result = grab(url, "./out/")
         print(f"grab returned: {result!r}")
@@ -53,21 +50,39 @@ class Import(AddOn):
             self.set_message("Couldn't download anything from that link.")
             sys.exit(0)
 
-        print(f"Uploading {len(grabbed)} file(s) with kwargs={kwargs!r}")
-        try:
-            self.client.documents.upload_directory(
-                "./out/",
-                extensions=None,
-                access=self.data.get("access_level"),
-                **kwargs,
-            )
-        except APIError as e:
-            print(f"upload_directory raised APIError: {e}")
-            self.set_message("Upload failed — see logs.")
-            sys.exit(1)
+        access = self.data.get("access_level")
+        successes = 0
+        errors = 0
+        for path in grabbed:
+            name = os.path.basename(path)
+            _title, ext = os.path.splitext(name)
+            ext = ext.lstrip(".").lower()
+            if not ext:
+                print(f"Skipping {path}: no file extension, can't determine type")
+                errors += 1
+                continue
 
-        print("upload_directory completed")
-        self.set_message(f"Uploaded {len(grabbed)} file(s).")
+            self.set_message(f"Uploading {name}...")
+            print(f"Uploading {path} (original_extension={ext!r}, kwargs={kwargs!r})")
+            try:
+                doc = self.client.documents.upload(
+                    path,
+                    original_extension=ext,
+                    access=access,
+                    **kwargs,
+                )
+            except APIError as e:
+                print(f"upload failed for {path}: {e}")
+                errors += 1
+                continue
+
+            print(f"uploaded {path} -> pk {doc.id}")
+            successes += 1
+
+        sfiles = "file" if successes == 1 else "files"
+        efiles = "file" if errors == 1 else "files"
+        print(f"Done: {successes} uploaded, {errors} skipped/failed")
+        self.set_message(f"Uploaded {successes} {sfiles}, skipped {errors} {efiles}")
 
 
 if __name__ == "__main__":
